@@ -2,12 +2,13 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-//const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const path = require('path');
-//const sauceRoutes = require('./routes/sauces');
-//const userRoutes = require('./routes/user');
+const publicationRoutes = require('./routes/publication');
+const userRoutes = require('./routes/user');
 
-require('dotenv').config();
+
+
 
 // CONSTANTES
 
@@ -38,16 +39,16 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
+// routes
+// on indique que l'on va utiliser les routeurs définis par
+app.use('/api/auth', userRoutes);
+app.use('/api/publication', publicationRoutes);
+
+
 // création middleware répondant aux req envoyées à /images
 // et servant le dossier statique /images en utilisant express.static()
 // chemin déterminé par la const path, utilisation méthode .join() avec
 // dirnamme = nom dossier où on se trouve dans lequel on rajout images
-//app.use('/images', express.static(path.join(__dirname, 'images')));
-
-// on indique que l'on va utiliser les routeurs définis par sauceRoutes et userRoutes
-//app.use('/api/sauces', sauceRoutes);
-
-//app.use('/api/auth', userRoutes);
-
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 module.exports = app;
