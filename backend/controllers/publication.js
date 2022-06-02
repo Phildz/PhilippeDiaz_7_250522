@@ -1,8 +1,5 @@
 // IMPORTS
 const Publication = require('../models/publication');
-const User = require('../models/user');
-const ObjectId = require('mongoose').Types.ObjectId;
-
 
 // --- import de filesystem = permet accès aux diff op liées au syst de fichier
 const fs = require('fs');
@@ -10,143 +7,173 @@ const fs = require('fs');
 
 // FONCTIONS
 
-// --- Récupération de toutes les publications TYPE 1
-// - docs = on met toute la data
-/*module.exports.readPublication = (req, res) => {
-    Publication.find((err, docs) => {
-       if(!err) res.send(docs);
-       else console.log('Error to get data : '+err);
-    }) 
-}*/
+// --- Création d'une publication
+exports.createPublication = (req, res, next) => {  
+  // --- on a un objet js ss forme de ch de caract = req.body.sauce à analyser
+  // --- extraction d'un objet json
+const publicationObject = JSON.parse(req.body.publication);
 
-// --- Récupération de toutes les publications TYPE 2
-exports.readPublication = (req, res, next) => {
-    Publication.find()
-        .then((publications) => {
-            res.status(200).json(publications);
-        })
-        .catch((error) => {
-            res.status(400).json({
-                error: error,
-            });
-        });
+  // --- suppression de l'id spécifique à mongoDB
+delete publicationObject._id;
+
+publicationObject.likes = 0;
+publicationObject.dislikes = 0;
+publicationObject.usersLiked = [];
+publicationObject.usersDisliked = [];
+
+  // ---constitution d'un nouvel objet sauce en recopiant toutes les données mais en modifiant 
+  // --- l'URL de l'image modifié par notre middleware multer
+const publication = new Publication({
+  ...publicationObject,
+
+  // --- récupération dynamique des segments nécessaire de l'URL où se trouve l'image. req.protocol 
+  // --- = http ou https + récupérer le host de notre server localhost:3000 ici (sinon racine serveur)
+  // --- + nom de fichier
+  imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+});
+publication.save()
+  .then(() => res.status(201).json({ message: 'Objet enregistré !'}))
+  .catch((error) => res.status(400).json({ error }));
 };
 
-
-// --- Création d'une publication TYPE 1
-module.exports.createPublication = async (req, res, next) => {
-
-    const newPublication = new Publication({
-        posterId: req.body.posterId,
-        message: req.body.message,
-        video: req.body.video,
-        likers: [],
-        commentaires: [],
-    });
-    // --- incrémenter notre data dans mongoDB
-    try {
-        const publication = await newPublication.save();
-        return res.status(201).json(publication);
-    }
-    catch (err) {
-        return res.status(400).send(err);
-    }
-}
-
-// --- Création d'une publication TYPE 2
-
-
-
-// --- Modification d'une publication TYPE 1
-/*module.exports.updatePublication = (req, res) => {
-    if (!ObjectId.isValid(req.params.id))
-        return res.status(400).send("Id inconnu : " + req.params.id);
-
-    const updatedRecord = {
-        message: req.body.message
-    }
-
-    Publication.findByIdAndUpdate(
-        req.params.id,
-        { $set: updatedRecord },
-        { new: true },
-        (err, docs) => {
-            if (!err) res.send(docs);
-            else console.log("Erreur de mise à jour: " + err);
-        }
-    )
-}*/
-
-// --- Modification d'une publication TYPE 2
+// --- Modification d'une publication
 exports.updatePublication = (req, res, next) => {
-    if (req.file) {
-      // si présence nouveau fichier image, on supprime l'ancien fichier (= deleteSauce)
-      Publication.findOne({ _id: req.params.id })    
-        .then((publication) => {
-          const filename = publication.imageUrl.split("/images/")[1];
-          fs.unlink(`./images/${filename}`, () => {
-            const publicationObject = {
-              ...JSON.parse(req.body.publication),
-              imageUrl: `${req.protocol}://${req.get("host")}/images/${
-                req.file.filename
-              }`
-            };
-            Publication.updateOne(
-              { _id: req.params.id },
-              { ...publicationObject, _id: req.params.id }
-            )
-              .then(() => res.status(200).json({ message: "Publication modifiée!" }))
-              .catch((error) => res.status(400).json({ error }));
-          });
-        })
-        .catch((error) => res.status(500).json({ error }));
-    } else {
-      // si pas de fichier image, on prend simplement le corps de la req
-      console.log("else");
-      const publicationObject = { ...req.body };
-      Publication.updateOne(
-        { _id: req.params.id },
-        { ...publicationObject, _id: req.params.id }
-      )
-        .then(() => res.status(200).json({ message: "Publication modifiée sans image!" }))
-        .catch((error) => res.status(400).json({ error }));
-    }
-  };
-
-
-// --- Supprimer une publication TYPE 1
-module.exports.deletePublication = (req, res) => {
-    if (!ObjectId.isValid(req.params.id))
-        return res.status(400).send("Id inconnu : " + req.params.id);
-
-    Publication.findByIdAndRemove(req.params.id, (err, docs) => {
-        if(!err) res.send(docs);
-       else console.log('Erreur de suppression : '+err);
-    })
-};
-
-// 
-/*exports.deletePublication = (req, res, next) => {
-    // trouver l'obj à sup de la bdd par son id qui doit correspondre
-    // à celui dispo ds les param req
-    Publication.findOne({ _id: req.params.id })
-    // dans le callback de then, on va récupérer une publication
-      .then(publication => {
-        // avec ce thing on veut le nom de fichier précisemment
-        // on split autour de /images/ dans le contenu de l'URL image
-        // retourne tab de 2 él : 1er él = avant /images/, 2è él = ce 
-        // qui vient après = nom du fichier que l'on récupère avec [1]
-        const filename = publication.imageUrl.split('/images/')[1];
-        // avec le nom de fich, on applique la fonction unlink du pack fs
-        // = sup un fich. 1er argt = le fich à sup
-        // 2è arg = le callback = ce qu'il faut faire 1 fois le fich sup
-        fs.unlink(`./images/${filename}`, (err) => {
-          console.log(err);
-          // on sup le thing de la bdd
-          Publication.deleteOne({ _id: req.params.id })
-            .then(() => res.status(204).json({ message: 'Objet supprimé !'}))
-            .catch(error => res.status(400).json({ error }));
+  if (req.file) {
+    // si présence nouveau fichier image, on supprime l'ancien fichier (= deletePublication)
+    Publication.findOne({ _id: req.params.id })    
+      .then((publication) => {
+        const filename = publication.imageUrl.split("/images/")[1];
+        fs.unlink(`./images/${filename}`, () => {
+          const publicationObject = {
+            ...JSON.parse(req.body.publication),
+            imageUrl: `${req.protocol}://${req.get("host")}/images/${
+              req.file.filename
+            }`
+          };
+          Publication.updateOne(
+            { _id: req.params.id },
+            { ...publicationObject, _id: req.params.id }
+          )
+            .then(() => res.status(200).json({ message: "Publication modifiée!" }))
+            .catch((error) => res.status(400).json({ error }));
         });
       })
-      .catch(error => res.status(500).json({ error }));
-  };*/
+      .catch((error) => res.status(500).json({ error }));
+  } else {
+    // si pas de fichier image, on prend simplement le corps de la req
+    console.log("else");
+    const publicationObject = { ...req.body };
+    Publication.updateOne(
+      { _id: req.params.id },
+      { ...publicationObject, _id: req.params.id }
+    )
+      .then(() => res.status(200).json({ message: "Publication modifiée!" }))
+      .catch((error) => res.status(400).json({ error }));
+  }
+};
+
+// --- Suppression d'une publication
+exports.deletePublication = (req, res, next) => {  
+  Publication.findOne({ _id: req.params.id })  
+    .then(publication => {
+      // avec ce thing on veut le nom de fichier précisemment
+      // on split autour de /images/ dans le contenu de l'URL image
+      // retourne tab de 2 él : 1er él = avant /images/, 2è él = ce 
+      // qui vient après = nom du fichier que l'on récupère avec [1]
+      const filename = publication.imageUrl.split('/images/')[1];
+      // avec le nom de fich, on applique la fonction unlink du pack fs
+      // = sup un fich. 1er argt = le fich à sup
+      // 2è arg = le callback = ce qu'il faut faire 1 fois le fich sup
+      fs.unlink(`./images/${filename}`, (err) => {
+        console.log(err);
+        // on sup le thing de la bdd
+        Publication.deleteOne({ _id: req.params.id })
+          .then(() => res.status(204).json({ message: 'Objet supprimé !'}))
+          .catch(error => res.status(400).json({ error }));
+      });
+    })
+    .catch(error => res.status(500).json({ error }));
+};
+
+// --- Récupération de toutes les publications
+exports.readAllPublication = (req, res, next) => {
+  Publication.find()
+    .then((publications) => {
+      res.status(200).json(publications);
+    })
+    .catch((error) => {
+      res.status(400).json({
+        error: error,
+      });
+    });
+};
+
+// --- Récupération des informations d'une seule publication
+exports.readOnePublication = (req, res, next) => {
+  Publication.findOne({
+    _id: req.params.id
+  }).then(
+    (publication) => {
+      res.status(200).json(publication);
+    }
+  ).catch(
+    (error) => {
+      res.status(404).json({
+        error: error
+      });
+    }
+  );
+};
+
+// --- Ajout likes / dislikes pour chaque publication
+exports.likePublication = (req, res) => {
+
+  // --- Si le client Like cette publication
+  if (req.body.like === 1) {
+    Publication.findOneAndUpdate(
+      // --- filtre sur l'id, on incrémente likes et on met l'id ds le tableau
+      { _id: req.params.id },
+      { $inc: { likes: 1 }, $push: { usersLiked: req.body.userId } }
+    )
+      .then(() => res.status(200).json({ message: "Like ajouté !" }))
+      .catch((error) => res.status(400).json({ error })); 
+
+  // --- Si le client disike cette publication 
+  }else if (req.body.like === -1) {
+    // --- filtre sur l'id, on incrémente likes et on met l'id ds le tableau
+    Publication.findOneAndUpdate(
+        { _id: req.params.id },
+        { $inc: { dislikes: 1 }, $push: { usersDisliked: req.body.userId } }
+      )
+        .then(() => res.status(200).json({ message: "Dislike ajouté !" }))
+        .catch((error) => res.status(400).json({ error }));
+  
+  /* Si le client annule son choix */
+      } else {
+        // --- recherche de la publication concernée par l'id user
+        Publication.findOne({ _id: req.params.id })
+        .then((resultat) => {
+          // --- recherche si le tableau userLike contient l'userId
+          // --- si ok on incrémente de -1 le like et on enlève l'userId du tab userLike
+          if (resultat.usersLiked.includes(req.body.userId)) {
+            Publication.findOneAndUpdate(
+              { _id: req.params.id },
+              { $inc: { likes: -1 }, $pull: { usersLiked: req.body.userId } }
+            )
+              .then(() => res.status(200).json({ message: "like retiré !" }))
+              .catch((error) => res.status(400).json({ error }));
+
+          // --- recherche si le tableau userDislike contient l'userId
+          // --- si ok on incrémente de -1 le dislike et on enlève l'userId du tab userDislike
+          } else if (resultat.usersDisliked.includes(req.body.userId)) {
+            Publication.findOneAndUpdate(
+              { _id: req.params.id },
+              { $inc: { dislikes: -1 }, $pull: { usersDisliked: req.body.userId } }
+            )
+              .then(() => res.status(200).json({ message: "dislike retiré !" }))
+              .catch((error) => res.status(400).json({ error }));
+          }
+        });
+      }
+}
+

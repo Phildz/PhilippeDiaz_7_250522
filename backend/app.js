@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const publicationRoutes = require('./routes/publication');
 const userRoutes = require('./routes/user');
+const { application } = require('express');
 
 
 
@@ -42,6 +43,7 @@ app.use(bodyParser.json());
 // routes
 // on indique que l'on va utiliser les routeurs définis par
 app.use('/api/auth', userRoutes);
+//app.use('/api/user', userRoutes);
 app.use('/api/publication', publicationRoutes);
 
 
