@@ -19,16 +19,17 @@ module.exports = (req, res, next) => {
     // quand on décode le token, ça devient un objet js classique
     // donc on peut récupérer le user id qui est dedans
     const userId = decodedToken.userId;
+    //const isAdmin = decodedToken.isAdmin;    
     // si il y a un user id avec la req, on veut vérifier la correspondance 
     // avec celle du token
     // si on a un user id et que celui ci est différent du user id
     // on veut retourner une erreur = ne pas authentifier la req
     if (req.body.userId && req.body.userId !== userId) {
       throw 'Invalid user ID';
-    } else {
+    } else {      
         // on passe la requête au prochain middleware dans les routes que
-        // l'on souhaite protéger --> dans stuff
-      next();
+        // l'on souhaite protéger --> dans stuff 
+      next();         
     }
   } catch {
     res.status(401).json({

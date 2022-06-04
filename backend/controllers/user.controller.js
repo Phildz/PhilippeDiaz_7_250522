@@ -9,7 +9,8 @@ const ObjectId = require('mongoose').Types.ObjectId;
 // 1- pour l'enregistrement de nouveaux utilisateurs
 
 // EXPORTS
-exports.signup = (req, res, next) => {
+
+/*exports.signup = (req, res, next) => {
   // hachage du mdp = fonction async => then + catch
   // on passe le mdp du corps de req passé par le frontend
   // le salt = combien de fois on exécute l'algo de hachage, ici 10 tours
@@ -35,7 +36,6 @@ exports.signup = (req, res, next) => {
     })
     .catch(error => res.status(500).json({ error }));
 };
-
 
 // 2- pour connecter des utilisateurs existants
 exports.login = (req, res, next) => {
@@ -65,7 +65,7 @@ exports.login = (req, res, next) => {
             // méthode sign, 1er arg = id du user, 2ème = clé secrète pour
             // l'encodage, 3ème = arg de config = appliquer une expiration token
             token: jwt.sign(
-              { userId: user._id },
+              { userId: user._id, isAdmin: this.isAdmin},
               '${process.env.TOKEN}',
               { expiresIn: '24h' }
             )
@@ -74,10 +74,12 @@ exports.login = (req, res, next) => {
         .catch(error => res.status(500).json({ error }));
     })
     .catch(error => res.status(500).json({ error }));
-};
+};*/
 
-module.exports.getAllUsers = async (req, res) => {
-  const users = await User.find().select();
+
+// Obtenir tous les utilisateurs
+module.exports.getAllUsers = async (req, res) => {  
+  const users = await User.find().select('-password');
   res.status(200).json(users); // on fait transiter en json la data users
 }
 

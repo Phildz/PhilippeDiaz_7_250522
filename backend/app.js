@@ -5,7 +5,9 @@ const bodyParser = require('body-parser');
 // const mongoose = require('mongoose');
 const path = require('path');
 const publicationRoutes = require('./routes/publication');
+const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+
 const { application } = require('express');
 
 
@@ -42,8 +44,8 @@ app.use(bodyParser.json());
 
 // routes
 // on indique que l'on va utiliser les routeurs définis par
-app.use('/api/auth', userRoutes);
-//app.use('/api/user', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/publication', publicationRoutes);
 
 

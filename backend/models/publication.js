@@ -11,9 +11,9 @@ const publicationSchema = mongoose.Schema(
     usersLiked: { type: Array, required: true },
     usersDisliked: { type: Array, required: true },
     },
-    /*{
-    timestamps:true,
-    }  */  
+    {
+    timestamps: true,
+    }
 );
 
 module.exports = mongoose.model('Publication', publicationSchema);
