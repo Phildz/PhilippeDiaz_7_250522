@@ -8,12 +8,9 @@ const fs = require('fs');
 // FONCTIONS
 
 // --- Création d'une publication
-exports.createPublication = (req, res, next) => {
-  // --- on a un objet js ss forme de ch de caract = req.body.sauce à analyser
-  // --- extraction d'un objet json
+exports.createPublication = (req, res, next) => {  
+  console.log(req.body.userId);
   const publicationObject = JSON.parse(req.body.publication);
-
-  // --- suppression de l'id spécifique à mongoDB
   delete publicationObject._id;
 
   publicationObject.likes = 0;
@@ -21,14 +18,9 @@ exports.createPublication = (req, res, next) => {
   publicationObject.usersLiked = [];
   publicationObject.usersDisliked = [];
 
-  // ---constitution d'un nouvel objet sauce en recopiant toutes les données mais en modifiant 
-  // --- l'URL de l'image modifié par notre middleware multer
+  
   const publication = new Publication({
     ...publicationObject,
-
-    // --- récupération dynamique des segments nécessaire de l'URL où se trouve l'image. req.protocol 
-    // --- = http ou https + récupérer le host de notre server localhost:3000 ici (sinon racine serveur)
-    // --- + nom de fichier
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
   });
   publication.save()
@@ -74,18 +66,10 @@ exports.updatePublication = (req, res, next) => {
 // --- Suppression d'une publication
 exports.deletePublication = (req, res, next) => {
   Publication.findOne({ _id: req.params.id })
-    .then(publication => {
-      // avec ce thing on veut le nom de fichier précisemment
-      // on split autour de /images/ dans le contenu de l'URL image
-      // retourne tab de 2 él : 1er él = avant /images/, 2è él = ce 
-      // qui vient après = nom du fichier que l'on récupère avec [1]
-      const filename = publication.imageUrl.split('/images/')[1];
-      // avec le nom de fich, on applique la fonction unlink du pack fs
-      // = sup un fich. 1er argt = le fich à sup
-      // 2è arg = le callback = ce qu'il faut faire 1 fois le fich sup
+    .then(publication => {      
+      const filename = publication.imageUrl.split('/images/')[1];      
       fs.unlink(`./images/${filename}`, (err) => {
-        console.log(err);
-        // on sup le thing de la bdd
+        console.log(err);        
         Publication.deleteOne({ _id: req.params.id })
           .then(() => res.status(204).json({ message: 'Objet supprimé !' }))
           .catch(error => res.status(400).json({ error }));

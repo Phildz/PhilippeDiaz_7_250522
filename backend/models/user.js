@@ -8,15 +8,11 @@ const jwt = require('jsonwebtoken');
 // --- Création plugin pour n'autoriser qu'une unique adresse mail
 //const uniqueValidator = require('mongoose-unique-validator');
 
-const userSchema = mongoose.Schema(
-  // --- unique = true pour qu'il soit impossible d'entrer 2 fois la même adresse mail
-  // --- fonctionne mais possiblité d'erreur avec mongoDB d'où nécessité d'ajouter
-  // --- un package
+const userSchema = mongoose.Schema(  
   {
     email: { type: String, required: true, unique: true, validate: [isEmail], lowercase: true, trim: true, },
     password: { type: String, required: true, minLength: 6, maxLength: 1024, },
     picture: { type: String, default: "./uploads/profil/random-user.png" },    
-    //bio: { type: String, maxLength: 1024,},
     role: {type: String, default: "user"}
   },
   {

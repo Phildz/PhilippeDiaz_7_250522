@@ -7,23 +7,9 @@ const path = require('path');
 const publicationRoutes = require('./routes/publication');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-
+//const session = require('express-session');
 const { application } = require('express');
-
-
-
-
-// CONSTANTES
-
 const app = express();
-
-
-/*mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`,
-{ useNewUrlParser: true,
-  useUnifiedTopology: true })
-.then(() => console.log('Connexion à MongoDB réussie !'))
-.catch(() => console.log('Connexion à MongoDB échouée !'));*/
-
 
 // APP
 
@@ -45,8 +31,16 @@ app.use(bodyParser.json());
 // routes
 // on indique que l'on va utiliser les routeurs définis par
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
 app.use('/api/publication', publicationRoutes);
+
+
+//app.use('/api/user', userRoutes);
+
+/*app.use(session({
+  secret: '${process.env.TOKEN}',
+  resave: false,
+  saveUninitialized: false,
+}))*/
 
 
 // création middleware répondant aux req envoyées à /images

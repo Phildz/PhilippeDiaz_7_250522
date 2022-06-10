@@ -10,6 +10,7 @@ const publicationSchema = mongoose.Schema(
     dislikes: { type: Number, required: true },
     usersLiked: { type: Array, required: true },
     usersDisliked: { type: Array, required: true },
+    role: {type: String, default: "user"}
     },
     {
     timestamps: true,
