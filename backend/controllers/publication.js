@@ -8,23 +8,29 @@ const fs = require('fs');
 // FONCTIONS
 
 // --- Création d'une publication
-exports.createPublication = (req, res, next) => {  
+exports.createPublication = (req, res, next) => {
+  console.log("dans CreatePublication");
   console.log(req.body.userId);
-  const publicationObject = JSON.parse(req.body.publication);
-  delete publicationObject._id;
-
+  console.log(req.body.message);
+  console.log(req.body.imageUrl);
+  const publicationObject = req.body;
+  //delete publicationObject._id;    
   publicationObject.likes = 0;
   publicationObject.dislikes = 0;
   publicationObject.usersLiked = [];
   publicationObject.usersDisliked = [];
 
-  
+  publicationObject.userId = req.body.userId;
+  publicationObject.message = req.body.message;
+  publicationObject.imageUrl = req.body.imageUrl;
+
   const publication = new Publication({
     ...publicationObject,
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.body.imageUrl}`,
   });
+
   publication.save()
-    .then(() => res.status(201).json({ message: 'Objet enregistré !' }))
+    .then(() => res.status(201).json({ message: 'Objet enregistré !'}))
     .catch((error) => res.status(400).json({ error }));
 };
 
@@ -33,55 +39,82 @@ exports.updatePublication = (req, res, next) => {
   if (req.file) {
     // si présence nouveau fichier image, on supprime l'ancien fichier (= deletePublication)
     Publication.findOne({ _id: req.params.id })
-      .then((publication) => {
-        const filename = publication.imageUrl.split("/images/")[1];
-        fs.unlink(`./images/${filename}`, () => {
-          const publicationObject = {
-            ...JSON.parse(req.body.publication),
-            imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename
-              }`
-          };
+      .then(publication => {
+        if (req.userId === publication.userId) {
+          const filename = publication.imageUrl.split("/images/")[1];
+          fs.unlink(`./images/${filename}`, () => {
+            const publicationObject = {
+              ...JSON.parse(req.body.publication),
+              imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename
+                }`
+            };
+            Publication.updateOne(
+              { _id: req.params.id },
+              { ...publicationObject, _id: req.params.id }
+            )
+              .then(() => res.status(200).json({ message: "Publication modifiée!" }))
+              .catch((error) => res.status(400).json({ error }));
+          });
+        } else {
+          return res.status(403).send("Vous n'avez pas les droits")
+        }
+      })
+      .catch((error) => res.status(500).json({ error }));
+  } else {
+    Publication.findOne({ _id: req.params.id })
+      .then(publication => {
+        if (req.userId === publication.userId) {
+          // si pas de fichier image, on prend simplement le corps de la req
+          console.log("else");
+          //const publicationObject = { ...req.body };
+          const publicationObject = {...JSON.parse(req.body.publication)};
           Publication.updateOne(
             { _id: req.params.id },
             { ...publicationObject, _id: req.params.id }
           )
-            .then(() => res.status(200).json({ message: "Publication modifiée!" }))
+            .then(() => res.status(200).json({ message: "Publication modifiée sans image!" }))
             .catch((error) => res.status(400).json({ error }));
-        });
+        } else {
+          return res.status(403).send("Vous n'avez pas les droits")
+        }
       })
-      .catch((error) => res.status(500).json({ error }));
-  } else {
-    // si pas de fichier image, on prend simplement le corps de la req
-    console.log("else");
-    const publicationObject = { ...req.body };
-    Publication.updateOne(
-      { _id: req.params.id },
-      { ...publicationObject, _id: req.params.id }
-    )
-      .then(() => res.status(200).json({ message: "Publication modifiée!" }))
-      .catch((error) => res.status(400).json({ error }));
   }
-};
+}
 
 // --- Suppression d'une publication
 exports.deletePublication = (req, res, next) => {
   Publication.findOne({ _id: req.params.id })
-    .then(publication => {      
-      const filename = publication.imageUrl.split('/images/')[1];      
+    .then(publication => {
+      if (req.userId === publication.userId) {
+        //.then(publication => {      
+        const imageUrl = publication.imageUrl.split('/images/')[1];
+        fs.unlink(`./images/${imageUrl}`, (err) => {
+          console.log(err);
+          Publication.deleteOne({ _id: req.params.id })
+            .then(() => res.status(204).json({ message: 'Objet supprimé !' }))
+            .catch(error => res.status(400).json({ error }));
+        });
+        //})
+      } else {
+        return res.status(403).send("Vous n'avez pas les droits")
+      }
+    })
+    /*.then(publication => {      
+      const filename = publication.imageUrl.split('/images/')[1];           
       fs.unlink(`./images/${filename}`, (err) => {
         console.log(err);        
         Publication.deleteOne({ _id: req.params.id })
           .then(() => res.status(204).json({ message: 'Objet supprimé !' }))
           .catch(error => res.status(400).json({ error }));
       });
-    })
+    })*/
     .catch(error => res.status(500).json({ error }));
 };
 
 // --- Récupération de toutes les publications
 exports.readAllPublication = (req, res, next) => {
-  Publication.find().sort({createdAt: "desc"})
-    .then((publications) => {      
+  Publication.find().sort({ createdAt: "desc" })
+    .then((publications) => {
       res.status(200).json(publications);
     })
     .catch((error) => {

@@ -1,24 +1,31 @@
 
-const User = require('../models/user');
+/*module.exports = function (req, res, next) {
 
-const authPage = (permissions) => {
-    return (req, res, next) => {
-        User.findOne({ email: req.body.email })            
-            .then(user => {                
-                if (!user) {                    
-                    return res.status(401).json({ error: 'Utilisateur non trouvé !' });
-                }
-                const userRole = user.role;
-                if (permissions.includes(userRole)) {                    
-                    next()
-                } else {
-                    return res.status(401).json("permission non accordée")
-                }
-            })
-            .catch(error => res.status(500).json({ error }));
+    if(!req.user.isAdmin) {
+        return res.status(403).send("Vous devez avoir les droits Administrateur")
     }
-}
+    next();
+}*/
 
-module.exports = authPage;
+// IMPORTS
+const jwt = require('jsonwebtoken');
 
+// EXPORT middleware
+module.exports = (req, res, next) => {    
+  try {       
+    const token = req.headers.authorization.split(' ')[1];    
+    const decodedToken = jwt.verify(token, '${process.env.TOKEN}');    
+    const userId = decodedToken.userId;
+    const isAdmin = decodedToken.isAdmin;    
+    
+    if(!isAdmin) {
+        return res.status(403).send("Vous devez avoir les droits Administrateur")
+    }
+    next();
 
+  } catch {
+    res.status(401).json({
+      error: new Error('Invalid request!')
+    });
+  }
+};

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // fonction qui valide l'email : renvoie true ou false
 const { isEmail } = require('validator');
 
-const jwt = require('jsonwebtoken');
+//const jwt = require('jsonwebtoken');
 
 // --- Création plugin pour n'autoriser qu'une unique adresse mail
 //const uniqueValidator = require('mongoose-unique-validator');
@@ -13,7 +13,8 @@ const userSchema = mongoose.Schema(
     email: { type: String, required: true, unique: true, validate: [isEmail], lowercase: true, trim: true, },
     password: { type: String, required: true, minLength: 6, maxLength: 1024, },
     picture: { type: String, default: "./uploads/profil/random-user.png" },    
-    role: {type: String, default: "user"}
+    role: {type: String, default: "user"},
+    isAdmin: {type: Boolean, default: "false" }
   },
   {
     timestamps: true,

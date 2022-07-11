@@ -1,52 +1,81 @@
-// IMPORTS
-
 const express = require('express');
 const bodyParser = require('body-parser');
-// const mongoose = require('mongoose');
+//const cookieParser = require('cookie-parser');
 const path = require('path');
-const publicationRoutes = require('./routes/publication');
 const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-//const session = require('express-session');
-const { application } = require('express');
+const publicationRoutes = require('./routes/publication');
+const userRoutes = require('./routes/usercontrol');
+
+require('dotenv').config({path: './config/.env'});
+require('./config/db');
+
+const cors = require('cors');
+const multer = require('multer');
+
+
 const app = express();
 
-// APP
+const corsOptions = {
+  origin: true, // process.env.CLIENT_URL,
+  credentials: true,
+  'allowedHeaders': ['Authorization', 'Content-Type'],  
+  'methods': 'GET,PUT,POST,DELETE,OPTIONS'
+  //'preflightContinue': false
+}
+app.use(cors(corsOptions));
+
 
 app.use(express.json());
-
-// Gestion de la sécurité
-app.use((req, res, next) => {
-    // permet l'accès à l'API depuis n'importe quelle origine
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    // permet d'ajouter des headers spécifiques aux requêtes envoyées vers l'API
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');        
-    // permet d'envoyer des requêtes avec les méthodes mentionnée
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    next();
-  });
-
 app.use(bodyParser.json());
-
-// routes
-// on indique que l'on va utiliser les routeurs définis par
-app.use('/api/auth', authRoutes);
-app.use('/api/publication', publicationRoutes);
-
-
-//app.use('/api/user', userRoutes);
-
-/*app.use(session({
-  secret: '${process.env.TOKEN}',
-  resave: false,
-  saveUninitialized: false,
-}))*/
+app.use(bodyParser.urlencoded({extended: true}));
+//app.use(cookieParser());
 
 
 // création middleware répondant aux req envoyées à /images
 // et servant le dossier statique /images en utilisant express.static()
 // chemin déterminé par la const path, utilisation méthode .join() avec
 // dirnamme = nom dossier où on se trouve dans lequel on rajout images
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/images', express.static(path.join(__dirname, '/images')));
+app.use(express.static('images'));
+
+const MIME_TYPES = {
+  'image/jpg': 'jpg',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif' : 'gif'
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  /*filename: function (req, file, cb) {
+    const extension = MIME_TYPES[file.mimetype];    
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) //Mentor
+    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + extension) //Mentor
+  }*/
+  filename: (req, file, callback) => {      
+    //const name = file.originalname.split(' ').join('_');      
+    const extension = MIME_TYPES[file.mimetype];      
+    callback(null, file.fieldname + Date.now() + '.' + extension);
+  }
+});
+
+const upload = multer({storage});
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  try{
+    return res.status(200).json(req.file)    
+  }
+  catch(err){
+    console.log(err);
+  }
+})
+
+
+// routes
+app.use('/api/user', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/publications', publicationRoutes);
+
 
 module.exports = app;
