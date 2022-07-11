@@ -36,7 +36,8 @@ exports.createPublication = (req, res, next) => {
 
 // --- Modification d'une publication
 exports.updatePublication = (req, res, next) => {
-  if (req.file) {
+  //if (req.file) {
+    console.log("req.file", req.file);
     // si présence nouveau fichier image, on supprime l'ancien fichier (= deletePublication)
     Publication.findOne({ _id: req.params.id })
       .then(publication => {
@@ -44,8 +45,8 @@ exports.updatePublication = (req, res, next) => {
           const filename = publication.imageUrl.split("/images/")[1];
           fs.unlink(`./images/${filename}`, () => {
             const publicationObject = {
-              ...JSON.parse(req.body.publication),
-              imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename
+              ...req.body,
+              imageUrl: `${req.protocol}://${req.get("host")}/images/${req.body.imageUrl
                 }`
             };
             Publication.updateOne(
@@ -60,26 +61,26 @@ exports.updatePublication = (req, res, next) => {
         }
       })
       .catch((error) => res.status(500).json({ error }));
-  } else {
+  } /*else {
     Publication.findOne({ _id: req.params.id })
       .then(publication => {
         if (req.userId === publication.userId) {
           // si pas de fichier image, on prend simplement le corps de la req
           console.log("else");
           //const publicationObject = { ...req.body };
-          const publicationObject = {...JSON.parse(req.body.publication)};
+          const publicationObject = {...req.body};
           Publication.updateOne(
             { _id: req.params.id },
             { ...publicationObject, _id: req.params.id }
           )
-            .then(() => res.status(200).json({ message: "Publication modifiée sans image!" }))
+            .then(() => res.status(200).json(req.imageUrl))//json({ message: "Publication modifiée sans image!" }))
             .catch((error) => res.status(400).json({ error }));
         } else {
           return res.status(403).send("Vous n'avez pas les droits")
         }
       })
   }
-}
+}*/
 
 // --- Suppression d'une publication
 exports.deletePublication = (req, res, next) => {
