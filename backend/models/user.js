@@ -14,7 +14,7 @@ const userSchema = mongoose.Schema(
     password: { type: String, required: true, minLength: 6, maxLength: 1024, },
     picture: { type: String, default: "./uploads/profil/random-user.png" },    
     role: {type: String, default: "user"},
-    isAdmin: {type: Boolean, default: "false" }
+    isAdmin: {type: Boolean, default: false }
   },
   {
     timestamps: true,

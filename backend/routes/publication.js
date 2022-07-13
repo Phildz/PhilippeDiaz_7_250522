@@ -6,7 +6,8 @@ const auth = require('../middleware/auth');
     // --- middleware multer
 const multer = require('../middleware/multer-config');
 const publicationCtrl = require('../controllers/publication');
-//const authPage = require('../middleware/admin');
+const admin = require('../middleware/admin');
+const authPage = require('../middleware/admin');
 
 // ROUTES
 

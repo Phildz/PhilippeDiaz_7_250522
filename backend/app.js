@@ -6,6 +6,9 @@ const authRoutes = require('./routes/auth');
 const publicationRoutes = require('./routes/publication');
 const userRoutes = require('./routes/usercontrol');
 
+const admin = require('./middleware/admin');
+const auth = require('./middleware/auth');
+
 require('dotenv').config({path: './config/.env'});
 require('./config/db');
 

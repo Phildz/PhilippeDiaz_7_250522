@@ -21,6 +21,8 @@ module.exports = (req, res, next) => {
     if(!isAdmin) {
         return res.status(403).send("Vous devez avoir les droits Administrateur")
     }
+    req.isAdmin = isAdmin;
+    console.log("isAdmin", isAdmin)
     next();
 
   } catch {
